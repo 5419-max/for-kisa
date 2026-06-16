@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>For Kisa</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#050608;font-family:'Cormorant Garamond',serif;color:#f0e6d0}
+#bg-canvas{position:fixed;inset:0;z-index:0}
+#flower-canvas{position:fixed;inset:0;z-index:1;pointer-events:none}
+
+/* textbox */
+#textbox{
+  position:fixed;bottom:22%;left:50%;transform:translateX(-50%);
+  z-index:10;width:min(620px,90vw);text-align:center;padding:0 1.5rem;
+}
+#line{
+  font-size:clamp(1.15rem,3.2vw,1.65rem);font-weight:300;font-style:italic;
+  line-height:1.75;color:#f0e6d0;
+  text-shadow:0 2px 30px rgba(0,0,0,0.9),0 0 60px rgba(0,0,0,0.6);
+  opacity:0;transform:translateY(14px);
+  transition:opacity 1.1s ease,transform 1.1s ease;min-height:4.5em;
+}
+#line.visible{opacity:1;transform:translateY(0)}
+
+/* hint */
+#hint{
+  position:fixed;bottom:13%;left:50%;transform:translateX(-50%);
+  z-index:10;font-family:'Inter',sans-serif;font-size:0.68rem;
+  letter-spacing:0.22em;text-transform:uppercase;color:rgba(180,160,120,0.7);
+  opacity:0;transition:opacity 1s ease;
+}
+#hint.visible{opacity:1;animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:0.35}50%{opacity:0.9}}
+
+/* open letter btn */
+#open-btn{
+  position:fixed;bottom:9%;left:50%;transform:translateX(-50%);
+  z-index:10;opacity:0;pointer-events:none;
+  background:none;border:1px solid rgba(244,169,36,0.45);
+  color:#f4a924;font-family:'Cormorant Garamond',serif;
+  font-size:1.05rem;font-style:italic;letter-spacing:0.12em;
+  padding:0.75rem 2.4rem;border-radius:2px;cursor:pointer;
+  transition:all 0.4s ease,opacity 1.2s ease;
+  box-shadow:0 0 20px rgba(244,169,36,0.08);
+}
+#open-btn.visible{opacity:1;pointer-events:all}
+#open-btn:hover{background:rgba(244,169,36,0.08);box-shadow:0 0 30px rgba(244,169,36,0.18)}
+
+/* letter overlay */
+#letter-overlay{
+  position:fixed;inset:0;z-index:20;
+  background:rgba(4,5,10,0.94);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity 1.6s ease;backdrop-filter:blur(6px);
+}
+#letter-overlay.open{opacity:1;pointer-events:all}
+
+#letter{
+  width:min(580px,90vw);max-height:88vh;overflow-y:auto;
+  background:linear-gradient(160deg,#141009 0%,#0e0c07 100%);
+  border:1px solid rgba(232,212,160,0.15);border-radius:3px;
+  padding:3rem 3.5rem;
+  box-shadow:0 0 100px rgba(244,169,36,0.07),0 0 0 1px rgba(232,212,160,0.05);
+  scrollbar-width:thin;scrollbar-color:rgba(232,212,160,0.15) transparent;
+}
+#letter .eyebrow{
+  font-family:'Inter',sans-serif;font-size:0.62rem;
+  letter-spacing:0.28em;text-transform:uppercase;
+  color:rgba(244,169,36,0.65);margin-bottom:2.2rem;
+}
+#letter h1{
+  font-size:clamp(1.9rem,4.5vw,2.6rem);font-weight:300;
+  color:#e8d4a0;margin-bottom:2rem;line-height:1.15;
+}
+#letter p{
+  font-size:clamp(0.95rem,2vw,1.08rem);font-weight:300;
+  line-height:2;color:rgba(240,230,208,0.85);margin-bottom:1.5rem;
+}
+#letter .sign{
+  margin-top:2.8rem;font-style:italic;font-size:1.05rem;
+  color:rgba(244,169,36,0.85);
+}
+#close-btn{
+  display:block;margin:2.8rem auto 0;background:none;
+  border:1px solid rgba(232,212,160,0.2);color:rgba(180,160,120,0.7);
+  font-family:'Inter',sans-serif;font-size:0.65rem;letter-spacing:0.22em;
+  text-transform:uppercase;padding:0.65rem 2rem;border-radius:2px;
+  cursor:pointer;transition:all 0.3s ease;
+}
+#close-btn:hover{border-color:rgba(244,169,36,0.5);color:#e8d4a0}
+
+/* progress dots */
+#dots{
+  position:fixed;bottom:6%;left:50%;transform:translateX(-50%);
+  z-index:10;display:flex;gap:8px;opacity:0;transition:opacity 0.8s ease;
+}
+#dots.visible{opacity:1}
+.dot{
+  width:5px;height:5px;border-radius:50%;
+  background:rgba(232,212,160,0.25);transition:all 0.5s ease;
+}
+.dot.active{background:rgba(244,169,36,0.85);transform:scale(1.3)}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<canvas id="flower-canvas"></canvas>
+
+<div id="textbox"><div id="line"></div></div>
+<div id="hint">tap anywhere to continue</div>
+<div id="dots"></div>
+<button id="open-btn">read the letter →</button>
+
+<div id="letter-overlay">
+  <div id="letter">
+    <div class="eyebrow">for kisa &nbsp;·&nbsp; with everything</div>
+    <h1>Two Sunflowers</h1>
+    <p>They say sunflowers always follow the sun. That's the part most people know. But there's something they don't tell you — when the night comes and the sun is gone, they don't just go still. They turn toward each other.</p>
+    <p>That's the part that got me.</p>
+    <p>Because I've been thinking about what that means for us. The world will have its bright days — the kind where everything feels easy and nothing needs to be said. But it'll also have its 2am seasons. The ones where the sky doesn't cooperate and life feels heavier than it should.</p>
+    <p>And in those moments, I don't want to be someone who only shows up in the sunshine. I want to be the thing you turn to when it's dark. Your warmth when the world goes cold. Your stillness when everything else is loud.</p>
+    <p>I can't hand you sunflowers right now — they're not exactly lining the streets of Kampala. But I built you this instead. Because you deserve something made, not just bought.</p>
+    <p>Two sunflowers. Turning toward each other. Even when the night is long.</p>
+    <p>That's what I want for us, Kisa.</p>
+    <div class="sign">— Ian</div>
+    <button id="close-btn">close</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CANVASES
+// ═══════════════════════════════════════════════
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+const fc = document.getElementById('flower-canvas');
+const ctx = fc.getContext('2d');
+
+function resize(){
+  bgCanvas.width = fc.width = window.innerWidth;
+  bgCanvas.height = fc.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════
+// STARS
+// ═══════════════════════════════════════════════
+const stars = Array.from({length:200}, () => ({
+  x: Math.random(),
+  y: Math.random() * 0.75,
+  r: Math.random() * 1.4 + 0.3,
+  alpha: Math.random(),
+  speed: 0.003 + Math.random() * 0.007,
+  phase: Math.random() * Math.PI * 2
+}));
+
+// ═══════════════════════════════════════════════
+// PARTICLES (pollen / fireflies)
+// ═══════════════════════════════════════════════
+const particles = Array.from({length:60}, () => resetParticle({}));
+function resetParticle(p){
+  p.x = 0.3 + Math.random() * 0.4;
+  p.y = 0.3 + Math.random() * 0.5;
+  p.vx = (Math.random()-0.5)*0.0008;
+  p.vy = -0.0003 - Math.random()*0.0006;
+  p.life = 0;
+  p.maxLife = 180 + Math.random()*200;
+  p.r = 0.8 + Math.random()*1.8;
+  p.hue = 38 + Math.random()*20;
+  return p;
+}
+
+// ═══════════════════════════════════════════════
+// SCENE STATE
+// ═══════════════════════════════════════════════
+const scenes = [
+  { sky:[5,6,18],  leftAngle:0,  rightAngle:0,  sunY:0.12, moonVis:0, text:"Have you heard of the sunflower theory?" },
+  { sky:[8,12,30], leftAngle:-18, rightAngle:-18, sunY:0.15, moonVis:0, text:"They say when the sun shines bright — sunflowers face the light." },
+  { sky:[18,10,25],leftAngle:-28, rightAngle:-28, sunY:0.25, moonVis:0, text:"But when night falls and the sun disappears..." },
+  { sky:[4,4,14],  leftAngle:25,  rightAngle:-25, sunY:1.2,  moonVis:1, text:"...they turn to face each other. Finding light in one another." },
+  { sky:[3,3,12],  leftAngle:30,  rightAngle:-30, sunY:1.2,  moonVis:1, text:"Even in the dark, you are my light." },
+  { sky:[2,2,10],  leftAngle:30,  rightAngle:-30, sunY:1.2,  moonVis:1, text:"Real love isn't chasing the light. It's becoming it — for each other.", showPollen:true },
+  { sky:[2,2,10],  leftAngle:30,  rightAngle:-30, sunY:1.2,  moonVis:1, text:"I have something to say to you, Kisa.", last:true, showPollen:true }
+];
+
+let current = 0;
+let prevScene = scenes[0];
+let targetScene = scenes[0];
+let t = 1; // lerp progress 0→1
+
+// ═══════════════════════════════════════════════
+// LERP HELPERS
+// ═══════════════════════════════════════════════
+const lerp = (a,b,t) => a+(b-a)*t;
+const ease = t => t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+// ═══════════════════════════════════════════════
+// SKY RENDER
+// ═══════════════════════════════════════════════
+function drawSky(skyRGB, moonVis, tick){
+  const W = bgCanvas.width, H = bgCanvas.height;
+  const [r,g,b] = skyRGB;
+
+  // Base gradient
+  const grad = bgCtx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, `rgb(${r*0.4},${g*0.4},${b*0.6})`);
+  grad.addColorStop(0.5, `rgb(${r},${g},${b})`);
+  grad.addColorStop(1, `rgb(${Math.min(r+8,30)},${Math.min(g+5,20)},${Math.min(b+5,20)})`);
+  bgCtx.fillStyle = grad;
+  bgCtx.fillRect(0,0,W,H);
+
+  // Stars
+  const starVis = Math.min(1, moonVis * 1.4);
+  stars.forEach(s => {
+    const pulse = 0.5 + 0.5 * Math.sin(tick * s.speed + s.phase);
+    bgCtx.beginPath();
+    bgCtx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    bgCtx.fillStyle = `rgba(255,255,255,${s.alpha * pulse * starVis})`;
+    bgCtx.fill();
+  });
+
+  // Moon
+  if(moonVis > 0){
+    const mx = W * 0.78, my = H * 0.1;
+    const moonGrad = bgCtx.createRadialGradient(mx,my,0,mx,my,55);
+    moonGrad.addColorStop(0,`rgba(255,248,230,${moonVis*0.95})`);
+    moonGrad.addColorStop(0.6,`rgba(240,228,195,${moonVis*0.85})`);
+    moonGrad.addColorStop(1,`rgba(200,185,150,0)`);
+    bgCtx.beginPath();
+    bgCtx.arc(mx,my,38,0,Math.PI*2);
+    bgCtx.fillStyle = moonGrad;
+    bgCtx.fill();
+    // Glow halo
+    const halo = bgCtx.createRadialGradient(mx,my,30,mx,my,120);
+    halo.addColorStop(0,`rgba(255,245,200,${moonVis*0.12})`);
+    halo.addColorStop(1,'rgba(255,245,200,0)');
+    bgCtx.beginPath();
+    bgCtx.arc(mx,my,120,0,Math.PI*2);
+    bgCtx.fillStyle=halo;
+    bgCtx.fill();
+  }
+
+  // Sun
+  const lerpSunY = lerp(prevScene.sunY, targetScene.sunY, ease(t));
+  const sunX = W*0.5, sunY = H*lerpSunY;
+  if(lerpSunY < 1.0){
+    const alpha = Math.max(0, 1 - lerpSunY * 1.2);
+    const sunCore = bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,60);
+    sunCore.addColorStop(0,`rgba(255,240,150,${alpha})`);
+    sunCore.addColorStop(0.3,`rgba(255,200,60,${alpha*0.9})`);
+    sunCore.addColorStop(0.7,`rgba(255,140,20,${alpha*0.5})`);
+    sunCore.addColorStop(1,'rgba(255,100,0,0)');
+    bgCtx.beginPath();
+    bgCtx.arc(sunX,sunY,60,0,Math.PI*2);
+    bgCtx.fillStyle=sunCore;
+    bgCtx.fill();
+    // Atmosphere bloom
+    const bloom = bgCtx.createRadialGradient(sunX,sunY*1.1,0,sunX,sunY*1.1,H*0.5);
+    bloom.addColorStop(0,`rgba(255,160,40,${alpha*0.25})`);
+    bloom.addColorStop(0.4,`rgba(200,80,20,${alpha*0.1})`);
+    bloom.addColorStop(1,'rgba(0,0,0,0)');
+    bgCtx.fillStyle=bloom;
+    bgCtx.fillRect(0,0,W,H);
+  }
+
+  // Ground
+  const groundH = H * 0.2;
+  const gGrad = bgCtx.createLinearGradient(0,H-groundH,0,H);
+  gGrad.addColorStop(0,'rgba(14,22,8,0.95)');
+  gGrad.addColorStop(1,'rgba(6,10,4,1)');
+  bgCtx.fillStyle=gGrad;
+  bgCtx.fillRect(0,H-groundH,W,groundH);
+
+  // Horizon glow
+  const hGrad = bgCtx.createLinearGradient(0,H-groundH-40,0,H-groundH+20);
+  const hr = Math.min(r+30,80), hg = Math.min(g+20,60), hb = Math.min(b+10,30);
+  hGrad.addColorStop(0,`rgba(${hr},${hg},${hb},0)`);
+  hGrad.addColorStop(0.5,`rgba(${hr},${hg},${hb},0.3)`);
+  hGrad.addColorStop(1,`rgba(${hr},${hg},${hb},0)`);
+  bgCtx.fillStyle=hGrad;
+  bgCtx.fillRect(0,H-groundH-40,W,60);
+}
+
+// ═══════════════════════════════════════════════
+// REALISTIC SUNFLOWER
+// ═══════════════════════════════════════════════
+function drawSunflower(ctx, cx, cy, stemH, angleRad, light, sway){
+  ctx.save();
+
+  const W = ctx.canvas.width;
+  const floorY = cy + stemH;
+
+  // ── STEM ──
+  const stemW = 10 * light;
+  const midX = cx + Math.sin(angleRad)*stemH*0.3;
+  ctx.beginPath();
+  ctx.moveTo(cx, floorY);
+  // Slight curve
+  ctx.quadraticCurveTo(midX, floorY - stemH*0.5, cx + Math.sin(angleRad)*stemH*0.6, cy + 10);
+  ctx.strokeStyle = `rgba(42,72,28,0.95)`;
+  ctx.lineWidth = stemW;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  // Stem highlight
+  ctx.beginPath();
+  ctx.moveTo(cx+2, floorY);
+  ctx.quadraticCurveTo(midX+2, floorY-stemH*0.5, cx+Math.sin(angleRad)*stemH*0.6+2, cy+10);
+  ctx.strokeStyle=`rgba(80,130,55,${0.3*light})`;
+  ctx.lineWidth=stemW*0.35;
+  ctx.stroke();
+
+  // ── LEAVES ──
+  function drawLeaf(lx,ly,rot,size){
+    ctx.save();
+    ctx.translate(lx,ly);ctx.rotate(rot);
+    // Main leaf
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.bezierCurveTo(size*0.3,-size*0.5, size*1.1,-size*0.4, size*1.3,0);
+    ctx.bezierCurveTo(size*1.1,size*0.3, size*0.3,size*0.3, 0,0);
+    const leafG=ctx.createLinearGradient(0,-size*0.3,size*1.2,size*0.2);
+    leafG.addColorStop(0,`rgba(55,100,35,${0.9*light})`);
+    leafG.addColorStop(1,`rgba(35,65,20,${0.8*light})`);
+    ctx.fillStyle=leafG;ctx.fill();
+    // Vein
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(size*1.1,0);
+    ctx.strokeStyle=`rgba(30,55,18,${0.6*light})`;ctx.lineWidth=1.2;ctx.stroke();
+    ctx.restore();
+  }
+  const lx = cx + Math.sin(angleRad)*stemH*0.55;
+  const ly = cy + stemH*0.3;
+  drawLeaf(lx, ly, angleRad - 0.5, 28);
+  drawLeaf(lx + 5, ly + 20, angleRad + 0.8, 22);
+
+  // ── HEAD POSITION ──
+  const hx = cx + Math.sin(angleRad)*stemH*0.6;
+  const hy = cy;
+
+  ctx.save();
+  ctx.translate(hx, hy);
+  ctx.rotate(angleRad + sway);
+
+  // ── PETALS (3 layers for depth) ──
+  const petalCount = 16;
+  const petalLen = 44 * light;
+  const petalW = 14 * light;
+
+  // Back petals (dark)
+  for(let i=0;i<petalCount;i++){
+    const a = (i/petalCount)*Math.PI*2 + 0.12;
+    ctx.save();ctx.rotate(a);
+    ctx.beginPath();
+    ctx.ellipse(0,-petalLen*0.55,petalW*0.45,petalLen*0.55,0,0,Math.PI*2);
+    const pg=ctx.createLinearGradient(0,-petalLen,0,0);
+    pg.addColorStop(0,`rgba(180,120,10,${0.55*light})`);
+    pg.addColorStop(1,`rgba(150,100,5,${0.3*light})`);
+    ctx.fillStyle=pg;ctx.fill();ctx.restore();
+  }
+
+  // Mid petals
+  for(let i=0;i<petalCount;i++){
+    const a = (i/petalCount)*Math.PI*2;
+    ctx.save();ctx.rotate(a);
+    ctx.beginPath();
+    ctx.ellipse(0,-petalLen*0.6,petalW*0.5,petalLen*0.6,0,0,Math.PI*2);
+    const pg=ctx.createLinearGradient(0,-petalLen,0,0);
+    pg.addColorStop(0,`rgba(250,200,30,${0.9*light})`);
+    pg.addColorStop(0.4,`rgba(245,175,15,${0.85*light})`);
+    pg.addColorStop(1,`rgba(200,130,10,${0.6*light})`);
+    ctx.fillStyle=pg;ctx.fill();
+    // Petal vein
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-petalLen*0.85);
+    ctx.strokeStyle=`rgba(200,150,10,${0.25*light})`;ctx.lineWidth=0.8;ctx.stroke();
+    ctx.restore();
+  }
+
+  // Front petals (bright, slightly offset)
+  for(let i=0;i<8;i++){
+    const a = (i/8)*Math.PI*2 + 0.19;
+    ctx.save();ctx.rotate(a);
+    ctx.beginPath();
+    ctx.ellipse(0,-petalLen*0.52,petalW*0.42,petalLen*0.52,0,0,Math.PI*2);
+    const pg=ctx.createLinearGradient(0,-petalLen*0.9,0,0);
+    pg.addColorStop(0,`rgba(255,230,60,${0.95*light})`);
+    pg.addColorStop(1,`rgba(240,185,20,${0.6*light})`);
+    ctx.fillStyle=pg;ctx.fill();ctx.restore();
+  }
+
+  // ── DISC CENTER ──
+  // Outer dark ring
+  const discR = 22 * light;
+  ctx.beginPath();ctx.arc(0,0,discR+3,0,Math.PI*2);
+  ctx.fillStyle=`rgba(45,20,5,${0.9*light})`;ctx.fill();
+
+  // Center gradient
+  const discG=ctx.createRadialGradient(0,0,0,0,0,discR);
+  discG.addColorStop(0,`rgba(80,38,8,${light})`);
+  discG.addColorStop(0.4,`rgba(65,28,5,${light})`);
+  discG.addColorStop(0.8,`rgba(50,20,3,${light})`);
+  discG.addColorStop(1,`rgba(30,12,2,${0.9*light})`);
+  ctx.beginPath();ctx.arc(0,0,discR,0,Math.PI*2);
+  ctx.fillStyle=discG;ctx.fill();
+
+  // Fibonacci seed pattern
+  const phi=1.618033988;
+  const seedCount=120;
+  for(let i=0;i<seedCount;i++){
+    const golden=i*phi*Math.PI*2;
+    const r=Math.sqrt(i/seedCount)*discR*0.9;
+    const sx=Math.cos(golden)*r, sy=Math.sin(golden)*r;
+    const sr=1.1*(1-i/seedCount*0.3);
+    ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);
+    const si=i/seedCount;
+    ctx.fillStyle=`rgba(${30+si*25},${12+si*10},${2+si*5},${0.85*light})`;
+    ctx.fill();
+  }
+
+  // Disc highlight
+  const dhl=ctx.createRadialGradient(-discR*0.25,-discR*0.25,0,-discR*0.25,-discR*0.25,discR*0.6);
+  dhl.addColorStop(0,`rgba(120,70,20,${0.25*light})`);
+  dhl.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath();ctx.arc(0,0,discR,0,Math.PI*2);
+  ctx.fillStyle=dhl;ctx.fill();
+
+  ctx.restore(); // end head
+  ctx.restore(); // end flower
+}
+
+// ═══════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════
+let tick = 0;
+let showPollen = false;
+
+function render(){
+  requestAnimationFrame(render);
+  tick++;
+
+  const W=fc.width, H=fc.height;
+  t = Math.min(t + 0.012, 1);
+  const et = ease(t);
+
+  // Interpolate sky
+  const ps=prevScene, ts=targetScene;
+  const skyR = [
+    Math.round(lerp(ps.sky[0],ts.sky[0],et)),
+    Math.round(lerp(ps.sky[1],ts.sky[1],et)),
+    Math.round(lerp(ps.sky[2],ts.sky[2],et))
+  ];
+  const moonV = lerp(ps.moonVis, ts.moonVis, et);
+
+  // Draw BG
+  bgCtx.clearRect(0,0,W,H);
+  drawSky(skyR, moonV, tick);
+
+  // Clear flower canvas
+  ctx.clearRect(0,0,W,H);
+
+  // Light (1 = day, 0.6 = night)
+  const light = lerp(1, 0.72, moonV);
+
+  // Flower positions - responsive
+  const isMobile = W < 600;
+  const separation = isMobile ? 0.14 : 0.11;
+  const lx = W*(0.5 - separation);
+  const rx = W*(0.5 + separation);
+  const stemH = Math.min(H*0.38, 200);
+  const baseY = H - H*0.19 - stemH*0.1;
+
+  // Sway
+  const sway = Math.sin(tick*0.018)*0.018 + Math.sin(tick*0.011)*0.008;
+
+  // Angles
+  const lAngle = lerp(ps.leftAngle, ts.leftAngle, et) * Math.PI/180;
+  const rAngle = lerp(ps.rightAngle, ts.rightAngle, et) * Math.PI/180;
+
+  drawSunflower(ctx, lx, baseY - stemH, stemH, lAngle, light, sway);
+  drawSunflower(ctx, rx, baseY - stemH, stemH, rAngle, light, -sway);
+
+  // ── POLLEN PARTICLES ──
+  if(showPollen && moonV > 0.5){
+    particles.forEach(p => {
+      p.life++;
+      if(p.life > p.maxLife) resetParticle(p);
+      p.x += p.vx;
+      p.y += p.vy + Math.sin(tick*0.04 + p.phase)*0.0003;
+      const alpha = Math.sin((p.life/p.maxLife)*Math.PI) * 0.7;
+      ctx.beginPath();
+      ctx.arc(p.x*W, p.y*H, p.r, 0, Math.PI*2);
+      ctx.fillStyle=`hsla(${p.hue},90%,65%,${alpha})`;
+      ctx.fill();
+      // Tiny glow
+      if(p.r > 1.5){
+        const pg=ctx.createRadialGradient(p.x*W,p.y*H,0,p.x*W,p.y*H,p.r*3);
+        pg.addColorStop(0,`hsla(${p.hue},90%,70%,${alpha*0.4})`);
+        pg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.r*3,0,Math.PI*2);
+        ctx.fillStyle=pg;ctx.fill();
+      }
+    });
+  }
+
+  // Depth vignette
+  const vig=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+  vig.addColorStop(0,'rgba(0,0,0,0)');
+  vig.addColorStop(1,'rgba(0,0,0,0.55)');
+  ctx.fillStyle=vig;ctx.fillRect(0,0,W,H);
+}
+render();
+
+// ═══════════════════════════════════════════════
+// SCENE LOGIC
+// ═══════════════════════════════════════════════
+const lineEl = document.getElementById('line');
+const hintEl = document.getElementById('hint');
+const openBtn = document.getElementById('open-btn');
+const overlay = document.getElementById('letter-overlay');
+const closeBtn = document.getElementById('close-btn');
+const dotsEl = document.getElementById('dots');
+
+// Build dots
+scenes.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className='dot'+(i===0?' active':'');
+  dotsEl.appendChild(d);
+});
+dotsEl.classList.add('visible');
+
+function updateDots(){
+  dotsEl.querySelectorAll('.dot').forEach((d,i)=>
+    d.classList.toggle('active', i===current));
+}
+
+function applyScene(idx){
+  prevScene = {
+    sky:[...targetScene.sky],
+    leftAngle:targetScene.leftAngle,
+    rightAngle:targetScene.rightAngle,
+    sunY:targetScene.sunY,
+    moonVis:targetScene.moonVis
+  };
+  targetScene = scenes[idx];
+  t = 0;
+  showPollen = !!targetScene.showPollen;
+
+  lineEl.classList.remove('visible');
+  setTimeout(()=>{
+    lineEl.textContent = targetScene.text;
+    lineEl.classList.add('visible');
+  }, 500);
+
+  if(idx === 0) setTimeout(()=>hintEl.classList.add('visible'),2000);
+
+  if(targetScene.last){
+    hintEl.classList.remove('visible');
+    setTimeout(()=>openBtn.classList.add('visible'), 2000);
+  }
+
+  updateDots();
+}
+
+function advance(){
+  if(overlay.classList.contains('open')) return;
+  if(scenes[current]?.last) return;
+  if(current < scenes.length-1){
+    current++;
+    applyScene(current);
+  }
+}
+
+document.body.addEventListener('click', advance);
+document.body.addEventListener('keydown', e=>{
+  if(['Space','Enter','ArrowRight'].includes(e.code)) advance();
+});
+
+openBtn.addEventListener('click', e=>{e.stopPropagation(); overlay.classList.add('open')});
+closeBtn.addEventListener('click', e=>{e.stopPropagation(); overlay.classList.remove('open')});
+
+applyScene(0);
+</script>
+</body>
+</html>
